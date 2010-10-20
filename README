@@ -1,0 +1,89 @@
+* GreeFastProcessor
+
+enables mod_php to run like mod_perl (= no resouce shutdown for each request), w/out modifying most of codes (*very* experimental)
+
+** usage
+
+*** 1. install extension
+
+configure, and make:
+
+ $ phpize
+ $ ./configure
+ $ make
+ $ sudo make install
+
+add extension directive to your php.ini:
+
+ extension=gree_fastprocessor.so
+
+*** 2. place php libraries
+
+copy bundled php files (fllowings) anywhere you want, and as any file name you want:
+
+ $ cp gree_fastprocessor.php /path/to/lib/
+ $ cp gree_fastprocessor_listener.php /path/to/lib/
+
+(and modify php executable path embeded in gree_fastprocessor_listener.php, if you need)
+
+*** 3. modify your index.php
+
+following lines are typical case in CakePHP:
+
+ --- index.php.original  2010-10-20 18:43:01.000000000 +0900
+ +++ index.php   2010-10-20 18:41:51.000000000 +0900
+ @@ -26,6 +26,9 @@
+   * @lastmodified       $Date: 2008-01-02 00:33:52 -0600 (Wed, 02 Jan 2008) $
+   * @license                    http://www.opensource.org/licenses/mit-license.php The MIT License
+   */
+ +require_once '/home/cake/app/vendors/gree_fastprocessor.php';
+ +
+ +if (Gree_FastProcessor::run('example') === false) {
+  /**
+   * Do not change
+   */
+ @@ -86,4 +89,5 @@
+         if (Configure::read() > 0) {
+                 echo "<!-- " . round(getMicrotime() - $TIME_START, 4) . "s -->";
+         }
+ +}
+  ?>
+
+*** 4. add your handler, and set your identity
+
+first of all, modify bundled gree_fastprocessor_handler.php and create your own handler cli based on your index.php. you can find typical example using CakePHP in exmaple/gree_fastprocessor_handler_example.php
+
+and then, set your handler path in gree_fastprocessor.php:
+
+ --- gree_fastprocessor.php.original     2010-10-20 18:51:22.000000000 +0900
+ +++ gree_fastprocessor.php      2010-10-20 18:51:43.000000000 +0900
+ @@ -8,7 +8,7 @@
+  
+         var     $ident_list = array(
+                 // sample
+ -               'sample'        => '/path/to/handler.php',
+ +               'example'       => '/home/cake/app/vendors/gree_fastprocessor_handler.php',
+         );
+  
+         /**#@-*/
+
+*** 5. run Gree FastProcessor
+
+ $ /path/to/gree_fastprocessor_listener.php --start --ident=example
+
+to stop daemon:
+
+ $ /path/to/gree_fastprocessor_listener.php --stop --ident=example
+ 
+and to restart:
+
+ $ /path/to/gree_fastprocessor_listener.php --restart --ident=example
+
+** notice / limited features
+
+- [notice] global, static variables and resources (e.g. database connections, static variables, etc) are not freed when requests completed
+- [notice] use Gree_FastProcessor::header() instead of header()
+- [notice] use Gree_FastProcessor::getAllHeaders() instead of getallheaders()
+- [notice] if your program exited w/ fatal errors or exit(), request continued w/out Gree_FastProcessor
+- [limited] file upload is not yet supported (though it is possible)
+- [limited] session handling needs more brush up
